@@ -18,10 +18,12 @@ router = APIRouter(prefix="/api/v1/transporter/dashboard", tags=["dashboard"])
 @router.get("", response_model=StandardResponse)
 def get_dashboard(current_user: User = Depends(get_current_transporter), db: Session = Depends(get_db)):
     # Active Trip
-    active_trip = db.query(Trip).filter(
+    active_trips = db.query(Trip).filter(
         Trip.transporter_id == current_user.id,
         Trip.status.notin_(["COMPLETED", "CANCELLED"])
-    ).order_by(Trip.created_at.desc()).first()
+    )
+    active_trips_count = active_trips.count()
+    active_trip = active_trips.order_by(Trip.created_at.desc()).first()
     
     # Available Loads (PENDING/VIEWED matches)
     available_loads_count = db.query(TransportMatch).filter(
@@ -70,6 +72,7 @@ def get_dashboard(current_user: User = Depends(get_current_transporter), db: Ses
     
     return success_response(data={
         "stats": {
+            "active_trips": active_trips_count,
             "available_loads": available_loads_count,
             "today_available": today_loads_count,
             "today_completed": today_completed_count,
